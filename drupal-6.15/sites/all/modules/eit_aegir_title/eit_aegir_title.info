@@ -1,0 +1,7 @@
+; $Id: eit_aegir_title.info,v 1
+
+name = eit_aegir_title
+
+description = The eit_aegir_title module
+
+core = 6.x

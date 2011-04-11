@@ -1,0 +1,53 @@
+<?php
+// $Id: eit_aegir_title.module,v 1
+
+
+/**
+ * Implementation of hook_form_alter().
+ */
+function eit_aegir_title_form_alter(&$form, $form_state, $form_id) {
+
+  //global $user;
+  $node = $form['#node'];
+
+  switch($form_id){
+    case 'hosting_signup_form':
+      $form['site']['title']['#field_suffix'] = strip_tags(variable_get('ec_domain','.essential-connections.com'));
+      $form['site']['title']['#element_validate'][] = 'eit_aegir_title_title_validate';
+    break;
+    case $node->type."_node_form":
+      switch($node->type){
+        case 'site':
+          if(arg(1) == 'add'){
+          $form['title']['#field_suffix'] = strip_tags(variable_get('ec_domain','.essential-connections.com'));
+          $form['title']['#element_validate'][] = 'eit_aegir_title_title_validate';
+          }
+        break;
+      }
+    break;
+  }
+
+}
+function eit_aegir_title_title_validate($element, &$form_state) {
+  if (empty($element['#value'])) {
+    form_error($element, t('This field is required.'));
+  }else if (strpos($element['#value'],'www.') === 0) {
+    form_error($element, t('You do not need to add www., an alias starting with www. will be created for you.'));
+  }else{
+    $badwords = explode(',',strip_tags(variable_get('ec_bad_words','')));
+    foreach($badwords as $word){
+      if (strpos($element['#value'],$word) !== false) {
+        form_error($element, t('Bad words are not allowed.'));
+      }
+    }
+    $reswords = explode(',',strip_tags(variable_get('ec_reserved_subdomains','')));
+    foreach($reswords as $word){
+      if ($element['#value'] == $word) {
+        form_error($element, t('This subdomain is reserved.'));
+      }
+    }
+  }
+  $value = $element['#value'].$element['#field_suffix'];
+  form_set_value($element, $value, &$form_state);
+  //drupal_set_message('ok: '.$element['#value']);
+}

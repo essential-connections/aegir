@@ -1,0 +1,597 @@
+<?php
+// $Id: eit_aegir.module,v 1
+
+/////////////////////////////////////
+
+/**
+ * Implementation of hook_theme_registry_alter().
+ */
+function eit_aegir_theme_registry_alter(&$theme_registry) {
+  // Make the array of the page hook's preprocess functions easier to
+  // get to.
+  $funcs = &$theme_registry['page']['preprocess functions'];
+
+  // Move '_preprocess_page' to be the first callback
+  // function.
+  $key = array_search('eit_aegir_preprocess_page', $funcs);
+  unset($funcs[$key]);
+  array_unshift($funcs, 'eit_aegir_preprocess_page');
+}
+
+/**
+ * Preprocess function for the page theme hook.
+ *
+ */
+function eit_aegir_preprocess_page($content, $show_blocks, $show_messages = TRUE) {
+  $path = implode("/", arg());
+  //drupal_set_message('path:'.$path);
+  //drupal_set_message(':::'.$_REQUEST['gids']);
+  //dpm($content);
+  /*
+  $breadcrumb = array();
+  switch(arg(0)){
+    case 'subscriptions':
+      $site = node_load(arg(1));
+      break;
+    case 'node':
+      $node = node_load(arg(1));
+      if($node->type == 'site'){
+        if(arg(2)){
+          $site = $node;
+        }
+      }else{
+        $site = og_get_group_context();
+      }
+      break;
+    default:
+      $site = og_get_group_context();
+      break;
+  }
+  if($site->type == 'site'){
+    //$breadcrumb[] = drupal_get_title();
+    $breadcrumb[] = l('Go back to '.$site->title, 'node/'.$site->nid);
+  }
+  drupal_set_breadcrumb($breadcrumb);
+  */
+  
+}
+
+
+/**
+ * Implementation of hook_cron().
+ */
+/*function eit_aegir_cron() {
+ // $result = db_query('SELECT * FROM {site} WHERE checked = 0 OR checked
+ //   + refresh < %d', time());
+
+  //while ($site = db_fetch_array($result)) {
+  //  cloud_update($site);
+ // }
+  
+//  exec("/usr/bin/php /var/aegir/drush/drush.php vset eit_ad 3  --root='/var/aegir/platforms/essential-connections-1.0' --uri='lodhie.essential-connections.com' --backend", $return, $code);
+   // exec(_hosting_dispatch_cmd(), $return, $code);
+    //variable_set('hosting_dispatch_enabled', FALSE);
+   // $return = join("\n", $return);
+   // $data = unserialize($return);
+    //if ($code == DRUSH_SUCCESS) {
+     // variable_set('hosting_dispatch_enabled', TRUE);
+      //drush_log(t("Dispatch command was run successfully"), 'success');
+      //_hosting_setup_cron();
+   // }
+   // else {
+     // drush_set_error('DRUSH_FRAMEWORK_ERROR', dt("Dispatch command could not b$
+   // }
+ // watchdog('eit','code:'.$code);
+  //watchdog('eit','return:'.$return);
+
+
+}*/
+
+////
+function eit_aegir_run_task($root,$uri,$command,$args){
+
+  $php = "sudo /usr/bin/php";
+  $drush_path = " /var/aegir/drush/drush.php ";
+  $cmd = $php . $drush_path . escapeshellcmd($command) . " " . escapeshellcmd($args) . " --root=".$root . " --uri=".$uri . " --backend";
+  //$return = passthru($cmd);
+  //$return = passthru("/usr/bin/php /var/aegir/drush/drush.php vset eit_ad 0  --root='/var/aegir/platforms/essential-connections-1.0' --uri='test6a.essential-connections.com' --backend");
+
+  return $cmd;//$return;
+}
+////
+
+/**
+ * Implementation of hook_hosting_tasks
+ */
+function eit_aegir_hosting_tasks() {
+  $tasks = array();
+
+  $tasks['site']['disableads'] = array(
+    'title' => t('Disable ads'),
+    'description' => t('Disable ads'),
+    'hidden' => !user_access('disable ads')
+   );
+  $tasks['site']['enableads'] = array(
+    'title' => t('Enable ads'),
+    'description' => t('Enable ads'),
+    'hidden' => !user_access('enable ads')
+   );
+
+  return $tasks;
+}
+function eit_aegir_disableads_from_order($order) {
+  foreach($order->products as $key => $product){
+    //$nid = $product->nid;
+    $sid = $product->data['attributes']['Site ID']['0'];
+    if($sid > 0){
+      $site = node_load($sid);
+      //drupal_set_message('key:'.$key.' sid:'.$sid);
+      if($site->field_ad['0']['value'] == '1'){
+        hosting_add_task($sid, 'disableads');
+      }
+    }else{
+      // error
+      $link = l('order','admin/store/orders/'.$order->order_id);
+      watchdog('ec','order %orderid has no products with a Site ID attribute greater than 0 in eit_aegir_disableads_from_order()', array('%orderid' => $order->order_id), WATCHDOG_ERROR,$link);
+    }
+  }
+}
+function eit_aegir_enableads_from_order($order) {
+  foreach($order->products as $key => $product){
+    $sid = $product->data['attributes']['Site ID']['0'];
+    if($sid > 0){
+      $site = node_load($sid);
+      //drupal_set_message('key:'.$key.' sid:'.$sid);
+      if($site->field_ad['0']['value'] == '0'){
+        hosting_add_task($sid, 'enableads');
+      }
+    }else{
+      // error
+      $link = l('order','admin/store/orders/'.$order->order_id);
+      watchdog('ec','order %orderid has no products with a Site ID attribute greater than 0 in eit_aegir_enableads_from_order()', array('%orderid' => $order->order_id), WATCHDOG_ERROR,$link);
+    }
+  }
+}
+////
+function eit_aegir_get_site_order_product($site_id=0,$product_id=0){
+
+  $result = db_query("SELECT * FROM {uc_order_products} uc_order_products WHERE ((uc_order_products.data) LIKE ('%s')) AND uc_order_products.nid = %d ORDER BY uc_order_products.order_id DESC LIMIT 1",'%s:7:"Site ID";a:1:{i:0;s:%:%"'.$site_id.'";%',$product_id);
+  //if(db_fetch_object($result)){
+    //return true;
+  //}else{
+    //return false;
+  //}
+  //dpm(db_fetch_object($result));
+  while ($product = db_fetch_object($result)) {
+    $product->data = unserialize($product->data);
+    //dpm($product);
+   return $product;
+   
+  }
+
+  return FALSE;
+}
+//////////////////
+
+/**
+ * Implementation of hook_perm().
+ */
+function eit_aegir_perm() {
+  return array('choose platform','view all site info','disable ads','enable ads');
+}
+
+/**
+ * Implementation of hook_help().
+ */
+/*function eit_aegir_help($path,$arg) {
+  //dpm($arg);
+  //drupal_add_js('misc/drupal.js');
+  //drupal_add_js('misc/collapse.js');
+  $output = '';//'<form><fieldset class="collapsable"><legend><a href="#">Help</a></legend><div class="fieldset-wrapper">';
+  switch($arg[0]){
+    case 'node':
+      $node = node_load($arg[1]);
+      if($node->type == 'site'){
+        if($arg[2] == 'edit'){
+          //$output = 'help/node/edit/site';//variable_get('ec_edit_aliases_help','');
+        }else if(!$arg[2]){
+          $output = 'node/1253';//variable_get('ec_cpanel_help','');
+        }
+      }else if($arg[1] == 'add'){
+          switch($arg[2]){
+            case 'site';
+              //$output = 'help/node/add/site';//variable_get('ec_create_site_help','');
+            break;
+          }
+      }
+    break;
+  }
+  //$output .= '</div></fieldset>';
+  //drupal_set_message(drupal_lookup_path('source',$output));
+  if($output){
+    return l('Help',$output,array('attributes' => array('class' => 'hosting-button-enabled','style' => 'float:right;')));
+  }else{
+    return '';
+  }
+}*/
+
+
+/**
+ * Implementation of hook_menu().
+ */
+function eit_aegir_menu() {
+  $items = array();
+  global $user;
+
+  /*$items['node/%/recurring/%/cancel/%'] = array(
+    'title' => 'Cancel',
+    'description' => '',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('eit_aegir_uc_recurring_user_cancel_form',3,4),
+    'access callback' => 'uc_recurring_user_access',
+    'access arguments' => array($user,3,'cancel'),
+    'type' => MENU_CALLBACK,
+    //'menu_name' => 'menu-administration',
+    'weight' => 1
+  );*/
+    
+
+  //// Hide some items
+  $items['og/users/%/add_user']['access callback'] = FALSE;
+  $items['og/activity']['access callback'] = FALSE;
+  $items['node/%node/broadcast']['access callback'] = FALSE;
+  $items['og']['access callback'] = FALSE;  
+  /////////
+
+  return $items;
+}
+
+/*function eit_aegir_menu_link_alter(&$item, $menu) {
+  // Example 1 - make all new admin links hidden (a.k.a disabled).
+  //if (strpos($item['link_path'], 'admin') === 0 && empty($item['mlid'])) {
+  // $item['hidden'] = 1;
+  //}
+  // Example 2 - flag a link to be altered by hook_translated_menu_link_alter()
+  //if ($item['link_path'] == 'admin/build/themes/settings') {
+    //$item['options']['alter'] = TRUE;
+    //$item['link_path'] == 'admin/build/themes/settings/cti_flex';
+  //}
+  //drupal_set_message($item['link_path']);
+  //if ($item['link_path'] == 'node/%/orders') {
+    //$item['hidden'] = 1;
+    //$item['link_path'] == 'admin/build/themes/settings/cti_flex';
+  //}
+
+}*/
+
+
+////////////////////////////////////
+
+function eit_aegir_form_alter(&$form, $form_state, $form_id) {
+    global $user;
+    //if($user->uid == 1) dpm($form);
+    global $base_path;
+    $node = $form['#node'];
+
+
+  // keep products from being purchased from outside a site group context and allow only 1 of each product per site
+  if(substr($form_id,0,28) == 'uc_product_add_to_cart_form_'){
+    $site = og_get_group_context();
+    if($site->type == 'site'){
+      $product = $form['node']['#value'];
+      //if(arg(0) == 'subscriptions'){
+      //  drupal_set_title('Disable ads for '.$site->title);
+      //}    
+      
+      if($product->type == 'feature'){
+        $dup = eit_aegir_get_site_order_product($site->nid,$product->nid);
+      }else{
+        $dup = FALSE;
+      }
+      
+      if(!$dup){        
+        $form['attributes']['1']['#default_value'] = $site->title;
+        $form['attributes']['2']['#default_value'] = $site->nid;
+        $form['attributes']['1']['#type'] = 'hidden';
+        $form['attributes']['2']['#type'] = 'hidden';
+      }else{
+        $form['attributes']['1']['#type'] = 'markup';
+        $form['attributes']['1']['#value'] = variable_get('ec_feature_already_purchased_text','');
+        $form['attributes']['2']['#type'] = 'hidden';
+        $form['submit']['#type'] = 'hidden';
+      }
+    }else{
+      $form['attributes']['1']['#type'] = 'markup';
+      $form['attributes']['1']['#value'] = variable_get('ec_feature_not_in_site_text','');
+      $form['attributes']['2']['#type'] = 'hidden';
+      $form['submit']['#type'] = 'hidden';
+    }
+  }
+
+  switch($form_id){
+
+    case 'hosting_signup_form':
+
+      //$form['site']['title']['#field_suffix'] = strip_tags(variable_get('ec_domain','.essential-connections.com'));
+      $form['site']['title']['#attributes'] = array('style' => 'width:150px;');
+      $form['site']['title']['#description'] = t('Enter the default subdomain for your site. This cannot be changed, but you can setup additional domain aliases after your account has been created. For example, if you enter <em>mysubdomain</em> your site will be accessable at <em>mysubdomain.essential-connections.com</em>.');
+      //$form['site']['title']['#element_validate'][] = 'eit_aegir_site_title_validate';      
+
+      $form['client']['client_name']['#type'] = 'hidden';
+      $form['client']['organization']['#type'] = 'hidden';
+
+      
+    break;
+    case 'user_register':
+  
+      $form['user_registration_help']['#type'] = 'hidden';  
+    break;
+    case 'views_exposed_form':
+      $form['submit']['#value'] = 'Search';
+ 
+    break;
+    case 'user_profile_form':
+      //$form['timezone']['#type'] = 'hidden';
+      //$form['mimemail']['#type'] = 'hidden';
+
+    break;
+    case $node->type."_node_form":
+
+      $form['body_field']['teaser_include']['#type'] = 'value';
+      //$form['body_field']['format']['#type'] = 'hidden';
+
+
+      //$form['buttons']['#prefix'] = "<div style='position:fixed;bottom:0;left:100;background: #FFFFFF;background-position: 50 10;border: 1px solid #CCCCCC;' >";
+      //$form['buttons']['#suffix'] = "</div>";
+
+      //$form['og_private']['#type'] = 'hidden';
+      //$form['og_private']['#default_value'] = 1;
+      $form['og_directory']['#type'] = 'hidden';
+      $form['og_directory']['#default_value'] = 0;
+
+      switch($node->type){
+        case 'site':
+
+          if(!user_access('view all site info')){
+            unset($form['info']);
+          }
+
+          if(!$node->nid){
+            $form['help'] = array(
+              '#value' => variable_get('ec_create_site_help',''),
+              '#weight' => -999999,
+            );
+            $form['client']['#type'] = 'hidden';
+            $form['aliases']['#type'] = 'hidden';
+          }
+
+          unset($form['buttons']['preview']);
+
+          $form['og_private']['#type'] = 'hidden';
+          $form['og_private']['#default_value'] = 1;
+          $form['og_register']['#type'] = 'hidden';
+          $form['og_register']['#default_value'] = 0;
+
+          $form['og_selective']['#type'] = 'hidden';
+          $form['og_selective']['#default_value'] = 3;
+          $form['og_description']['#default_value'] = 'site';
+          $form['og_description']['#type'] = 'hidden';
+
+          //$form['title']['#field_suffix'] = strip_tags(variable_get('ec_domain','.essential-connections.com'));
+          $form['title']['#attributes'] = array('style' => 'width:150px;');
+          $form['title']['#description'] = variable_get('ec_site_title_help','');
+          //$form['title']['#weight'] = -5;
+          //$form['title']['#element_validate'][] = 'eit_aegir_site_title_validate';
+
+          //$form['client']['#weight'] = -4;
+
+          if(!user_access('choose platform')){
+          $form['platform']['#type'] = 'hidden';
+          }
+          if($user->uid != 1){
+          $form['redirection']['#type'] = 'hidden';
+          $form['port']['#type'] = 'hidden';
+          }
+          $form['port']['ssl']['#default_value'] = '0';
+          $form['port']['ssl_redirect']['#default_value'] = '0';
+
+	  $form['aliases']['#description'] = variable_get('ec_edit_aliases_help','');
+          //$form['aliases']['#weight'] = -3;
+
+        break;
+        case 'support_ticket':
+    
+          $form['og_nodeapi']['#title'] = 'Sites';
+
+          $form['og_nodeapi']['visible']['og_groups_visible']['#title'] = 'Regarding';
+          $form['og_nodeapi']['visible']['og_groups_visible']['#description'] = '';
+          $form['og_nodeapi']['visible']['og_groups']['#title'] = 'Regarding';
+	  $form['og_nodeapi']['visible']['og_groups']['#description'] = '';
+
+          $form['og_nodeapi']['visible']['og_public']['#default_value'] = 0;
+          $form['og_nodeapi']['visible']['og_public']['#type'] = 'hidden';
+        break;
+        case 'feature_request':
+
+          $form['og_nodeapi']['#title'] = 'Sites';
+
+          $form['og_nodeapi']['visible']['og_groups_visible']['#title'] = 'Regarding';
+          $form['og_nodeapi']['visible']['og_groups_visible']['#description'] = '';
+          $form['og_nodeapi']['visible']['og_groups']['#title'] = 'Regarding';
+          $form['og_nodeapi']['visible']['og_groups']['#description'] = '';
+
+          $form['og_nodeapi']['visible']['og_public']['#default_value'] = 0;
+          $form['og_nodeapi']['visible']['og_public']['#type'] = 'hidden';
+        break;
+        default:
+
+        break;
+      }
+    break;
+    default:
+
+    break;
+  }
+
+}
+
+////
+
+function eit_aegir_og_links_alter(&$items,$node) {
+  //global $user;
+
+  unset($items["invite"]);
+  unset($items["subscribers"]);
+  unset($items["manager"]);
+  unset($items["my_membership"]);
+  //if($node->field_ad['0']['value'] == '1'){
+  //  $item = l(t('Upgrade to ad free'), 'subscriptions/'.$node->nid, array('query' => 'gids[]='. $node->nid));
+  //  array_unshift($items,$item);
+  //}
+
+}
+
+function eit_aegir_nodeapi(&$node, $op, $a3 = NULL, $a4 = NULL) {
+  switch ($op) {
+    case 'presave':
+// MOVE TO RULE
+      // put tasks into the proper site group
+      if($node->type == 'task'){
+        $site = node_load($node->rid);
+        //og_set_group_context($site);
+        $node->og_groups_both[$node->rid] = $site->title;
+        $node->og_groups[$node->rid] = $node->rid;
+        $node->og_public = 0;
+        //drupal_set_message($node->rid.' ::: '.og_get_group_context());
+      }
+      break;
+    case 'insert':
+
+      break;
+    case 'update':
+      
+      break;
+    case 'view':
+// MOVE TO RULE
+      global $user;
+      if($user->uid == 1){
+        //dpm($node);
+      }
+      
+      switch($node->type){
+        case 'site':
+          //dpm();
+
+          $node->content['info']['#weight'] = 500;
+          $node->content['tasks_view']['#weight'] = 500;
+          if($node->site_status == 1) $node->content['info']['aliases']['#value'] .= '<br/>'.l('Edit Domain Aliases','node/'.$node->nid.'/edit',array('attributes' => array('class' => 'hosting-button-enabled')));
+
+          $aliases = $node->aliases;
+          if($aliases){
+          $node->content['info']['dns'] = array(
+            '#type' => 'item',
+            '#title' => 'DNS',
+            '#value' => '',
+            '#weight' => 3,
+          );
+          $node->content['info']['dns']['#value'] .= '<table class="hosting-table"><tbody>';
+          foreach($aliases as $val){
+            $rec = dns_get_record(trim($val),DNS_CNAME);
+            //if($rec[0]['target']){
+              //drupal_set_message($val.' : '.$rec[0]['target']);
+              if($rec[0]['target'] == variable_get('ec_hosting_cname','echs.essential-connections.com')){
+                $class = 'hosting-success';
+              }else{
+                $class = 'hosting-error';
+              }
+              $node->content['info']['dns']['#value'] .= '<tr class="'.$class.'"><td class="hosting-status">'.l($val,$val).'<br/><em>CNAME: </em>'.$rec[0]['target'].'</td></tr>';
+            //}
+          }
+          $node->content['info']['dns']['#value'] .= '</tbody></table>';
+          $node->content['info']['dns']['#value'] .= variable_get('ec_dns_help','');//'You must point a <em>CNAME</em>(www.example.com) of each custom domain alias to: <div style="text-align:center;"><em><strong>'.variable_get('ec_hosting_cname','echs.essential-connections.com').'</strong></em></div>You may also want to forward the <em>A</em> record(example.com) to the <em>CNAME</em>.';
+          }
+
+          $node->content['help'] = array(
+            '#value' => variable_get('ec_cpanel_help',''),
+            //'#value' => t('<strong>This is the Control Panel for your Site.</strong> Choose the Edit Tab at the top left to add or change domain aliases. The <strong>Left Panel</strong> shows the status of your site. Once your site is activated, you will have a link to your site here for easy access. The <strong>Center Panel</strong> is the Task panel. You can <strong>Backup</strong> your site, which is highly recommended to do on a regular basis if you are adding information frequently, and <strong>Restore</strong> any of your backups. You can <strong>Disable</strong> your site which will make it unavailable to view. When you do this the <strong>Enable</strong> task will be activated so you can make your site available again. The <strong>Right Panel</strong> contains the <strong>Support Ticket System</strong> to report problems and get your questions answered. Your <strong>Account</strong> information is accessed here so you can change your settings, or add another site.'),
+            '#weight' => 501,
+          );
+          
+          if($node->site_status == 1){
+          $node->content['info']['ads'] = array(
+            '#type' => 'item',
+            '#title' => 'Ad supported',
+            '#value' => ($node->field_ad['0']['value']) ? 'Yes':'No',
+            '#weight' => 51,
+          );
+          }
+
+          /*if(!user_access('administer site')){
+            unset($node->content['info']['link']);
+            if($node->site_status == 1){
+              $title = t("Go to !url" , array('!url' => $node->title));
+              $node->content['info']['link2'] = array(
+                '#type' => '',
+                '#title' => '',
+                '#value' => l($title, 'http://'.$node->title,array(target => '_blank')),
+                '#weight' => -51,
+              );
+            }
+          }*/
+          if(!user_access('view all site info')){
+            unset($node->content['info']['db_server']);
+            unset($node->content['info']['profile']);
+            unset($node->content['info']['client']);
+            unset($node->content['info']['ssl']);
+            unset($node->content['info']['redirection']);
+            unset($node->content['info']['port']);
+            unset($node->content['info']['last_cron']);
+            unset($node->content['tasks_view']);
+          }
+          break;
+      }
+      break;
+  }
+}
+////
+
+function eit_aegir_views_query_alter(&$view, &$query) {
+
+  if($view->name == 'site_orders'){
+    $site = og_get_group_context();
+    //dpm($view);
+    $query->where[0]['clauses'][] = '(%s) LIKE ("%s")';
+    $query->where[0]['args'][] = 'uc_order_products.data';
+    $query->where[0]['args'][] = '%s:7:"Site ID";a:1:{i:0;s:%:%"'.$site->nid.'";%';
+    //dpm($query->where[0]['clauses'][0]);
+    //dpm($query);
+  }
+  
+  
+}
+
+
+/**
+ * Displays the confirmation form for cancelling a recurring fee.
+ */ 
+/*function eit_aegir_uc_recurring_user_cancel_form($form_state, $func,$rfid, $fee_handler) {
+  $cancel_path = referer_uri();
+  $fee = uc_recurring_fee_user_load($rfid);
+  if ($fee->fee_handler == $fee_handler) {
+    $form['uid'] = array('#type' => 'value', '#value' => $fee->uid);
+    $form['rfid'] = array('#type' => 'value', '#value' => $rfid);
+    return confirm_form($form, t('Are you sure you want to cancel this recurring fee?'), $cancel_path, t('This action cannot be undone and may result in the termination of subscription services.'), t('Yes, I want to cancel the subscription'), t('No, I want to continue with the subscription'));
+  }
+  else {
+    drupal_set_message(t('Invalid fee handler was given, try again from the operations for this <a href="@url">recurring fee</a>, if problem persists contact the site administrator.', array('@url' => url($cancel_path))), 'error');
+  }
+}*/
+/**
+ * Implements hook_submit() for the cancel recurring fee form
+ */ 
+/*function eit_aegir_uc_recurring_user_cancel_form_submit($form, &$form_state) {
+  uc_recurring_fee_cancel($form_state['values']['rfid']);
+  drupal_set_message(t('The recurring fee has been cancelled.'));
+  //$fee = uc_recurring_fee_user_load($form_state['values']['rfid']);
+  $form_state['redirect'] = 'node/'. arg(1);
+}*/
