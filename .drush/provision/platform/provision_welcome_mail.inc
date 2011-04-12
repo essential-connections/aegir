@@ -10,8 +10,8 @@
 
 $mail = array();
 
-$mail['subject'] = st('Your new site !site has been created.');
-$mail['body'] = st("Your new site !site has been created.
+$mail['subject'] = st('Your new site !site is ready.');
+$mail['body'] = st("Your new site !site is ready.
 
 The login information for your website is different than the login for your account at essential-connections.com.
 This is done for security reasons and for your protection. 
@@ -30,6 +30,9 @@ When you visit your website for the first time it may take an extra few seconds 
 Note: If you are not automatically taken to the page to change your password, do not leave the site.
 Click on My Account on the black bar menu at the top of the page. When you are in My Account, go to
 the Edit tab to enter a new password and then click Save at the bottom of the page.
+
+To get started setting up your site view our guide at http://help.essential-connections.com/content/getting-started 
+which you can also find in your personal menu at the top of your site under \"Help\".
 
 Thank you for becoming an Essential-Connections member.
 
