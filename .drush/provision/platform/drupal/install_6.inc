@@ -69,7 +69,7 @@ function install_create_admin_user($client_email = NULL) {
     $ec_account = user_load(1);
     $ec_edit['name'] = 'ecadmin';
     $ec_edit['pass'] = user_password();
-    $ec_edit['mail'] = 'support@essential-connections.com';
+    $ec_edit['mail'] = 'ecadmin@essential-connections.com';
     $ec_edit['status'] = 1;
     $ec_account = user_save($ec_account,  $ec_edit);
 
