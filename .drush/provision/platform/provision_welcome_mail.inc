@@ -16,13 +16,13 @@ $mail['body'] = st("Your new site !site is ready.
 The login information for your website is different than the login for your account at essential-connections.com.
 This is done for security reasons and for your protection. 
 
-The default user name for your website account is admin, and you will create a password when you log in using the link below.
+The default user name for your website account is admin.
 
-You can now login to your site by clicking on this link or copying it into your browser:
+You can now log in to your site by clicking on this link or copying it into your browser:
 
 !login_url
 
-Once you have logged in, you will be redirected to !edit_uri so you can change your password. This is a one-time login so it.s important for you to enter your own password at this time. Be sure to keep your password secure to
+Once you have logged in, you will be redirected to !edit_uri so you can create your password. This is a one-time log in so it's important for you to enter your own password at this time. Be sure to keep your password secure to
 protect your site.
 
 When you visit your website for the first time it may take an extra few seconds to load while the site builds the initial caches. You may also see some system messages.
