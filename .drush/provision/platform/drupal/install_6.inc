@@ -65,11 +65,11 @@ function install_create_admin_user($client_email = NULL) {
 
   //if($profile == 'essential_connections'){
 
-    // create ecadmin account
+    // create hostmaster account
     $ec_account = user_load(1);
-    $ec_edit['name'] = 'ecadmin';
+    $ec_edit['name'] = 'hostmaster';
     $ec_edit['pass'] = user_password();
-    $ec_edit['mail'] = 'ecadmin@essential-connections.com';
+    $ec_edit['mail'] = 'hostmaster@essential-connections.com';
     $ec_edit['status'] = 1;
     $ec_account = user_save($ec_account,  $ec_edit);
 

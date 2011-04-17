@@ -555,6 +555,21 @@ function eit_aegir_nodeapi(&$node, $op, $a3 = NULL, $a4 = NULL) {
 }
 ////
 
+function eit_aegir_user($op, &$edit, &$account, $category = NULL) {
+
+  switch($op) {
+    case 'view':
+
+      $account->content['summary']['groups']['#title'] = 'Sites';
+
+      return $account;
+    break;
+  }
+
+}
+
+////
+
 function eit_aegir_views_query_alter(&$view, &$query) {
 
   if($view->name == 'site_orders'){
