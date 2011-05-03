@@ -1,5 +1,0 @@
-<?php
-
-include_once('ec_install_last.features.inc');
-
-

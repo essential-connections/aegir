@@ -1,3 +1,0 @@
-<?php
-
-include_once('ec_permissions_lock.features.inc');

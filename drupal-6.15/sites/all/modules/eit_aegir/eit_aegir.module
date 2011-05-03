@@ -484,7 +484,10 @@ function eit_aegir_nodeapi(&$node, $op, $a3 = NULL, $a4 = NULL) {
 
           $node->content['info']['#weight'] = 500;
           $node->content['tasks_view']['#weight'] = 500;
-          if($node->site_status == 1) $node->content['info']['aliases']['#value'] .= '<br/>'.l('Edit Domain Aliases','node/'.$node->nid.'/edit',array('attributes' => array('class' => 'hosting-button-enabled')));
+          if($node->site_status == 1) $node->content['info']['aliases']['#value'] .= '<br/>'.
+                //l('Edit Domain Aliases','node/'.$node->nid.'/edit',array('attributes' => array('class' => 'hosting-button-enabled')));
+                '<form action="/node/'.$node->nid.'/edit" method="get"><input class="form-submit" type="submit" value="Edit Domain Aliases" /></form>';
+
 
           $aliases = $node->aliases;
           if($aliases){
